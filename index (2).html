@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS NFT — Digital Art Marketplace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810;
+    --bg2: #0e0e1a;
+    --bg3: #14142a;
+    --card: #111122;
+    --border: rgba(120,100,255,0.15);
+    --border2: rgba(120,100,255,0.3);
+    --accent: #7c5cfc;
+    --accent2: #a78bfa;
+    --accent3: #c4b5fd;
+    --neon: #00e5ff;
+    --neon2: rgba(0,229,255,0.12);
+    --gold: #fbbf24;
+    --gold2: rgba(251,191,36,0.12);
+    --text: #f0eeff;
+    --text2: #a89ec4;
+    --text3: #6b6494;
+    --green: #22d3ee;
+    --red: #f87171;
+    --radius: 16px;
+    --radius2: 24px;
+    --glow: 0 0 30px rgba(124,92,252,0.25);
+    --glow2: 0 0 60px rgba(124,92,252,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4 { font-family: 'Syne', sans-serif; letter-spacing: -0.02em; }
+
+  /* NOISE TEXTURE */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* GRID OVERLAY */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: linear-gradient(rgba(124,92,252,0.03) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(124,92,252,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app { position: relative; z-index: 1; }
+
+  /* =================== NAV =================== */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px;
+    height: 68px;
+    background: rgba(8,8,16,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--accent2), var(--neon));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .nav-links { display: flex; gap: 8px; align-items: center; }
+
+  .nav-btn {
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+
+  .nav-btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .nav-btn-ghost:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+
+  .nav-btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 0 20px rgba(124,92,252,0.4);
+  }
+  .nav-btn-primary:hover { background: var(--accent2); box-shadow: 0 0 30px rgba(124,92,252,0.6); }
+
+  .nav-user {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; color: var(--text2);
+  }
+
+  .avatar-sm {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px;
+    font-family: 'Syne', sans-serif;
+  }
+
+  /* =================== SCREENS =================== */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* =================== AUTH SCREEN =================== */
+  .auth-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: stretch;
+  }
+
+  .auth-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    background: var(--bg);
+    position: relative;
+  }
+
+  .auth-right {
+    width: 480px;
+    background: var(--bg2);
+    border-left: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    position: relative;
+  }
+
+  .auth-art {
+    text-align: center;
+    max-width: 500px;
+  }
+
+  .auth-art-grid {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 12px;
+    margin-bottom: 48px;
+  }
+
+  .auth-art-card {
+    border-radius: 14px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    position: relative;
+  }
+
+  .auth-art-card svg { width: 100%; height: 100%; display: block; }
+
+  .auth-art h1 {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, var(--text) 0%, var(--accent3) 50%, var(--neon) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .auth-art p { color: var(--text2); font-size: 16px; line-height: 1.6; }
+
+  .auth-form { width: 100%; }
+
+  .auth-tabs {
+    display: flex;
+    background: var(--bg3);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 32px;
+  }
+
+  .auth-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text3);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .auth-tab.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 0 20px rgba(124,92,252,0.4);
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    transition: all 0.2s;
+    outline: none;
+  }
+
+  .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,92,252,0.15); }
+  .form-control::placeholder { color: var(--text3); }
+
+  .btn-full {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 30px rgba(124,92,252,0.4);
+    margin-top: 8px;
+  }
+
+  .btn-full:hover { background: var(--accent2); box-shadow: 0 0 40px rgba(124,92,252,0.6); transform: translateY(-1px); }
+
+  .auth-guest {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .auth-guest a {
+    color: var(--accent3);
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .auth-guest a:hover { color: var(--neon); }
+
+  .error-msg {
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.3);
+    color: var(--red);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    display: none;
+  }
+
+  /* =================== CATALOG SCREEN =================== */
+  .catalog-header {
+    padding: 48px 40px 32px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--bg2) 0%, transparent 100%);
+  }
+
+  .catalog-header h2 {
+    font-size: 36px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .catalog-header p { color: var(--text2); }
+
+  .catalog-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .search-box input:focus { border-color: var(--accent); }
+
+  .search-box svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+  }
+
+  .filter-btn {
+    padding: 10px 18px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn:hover, .filter-btn.active { border-color: var(--accent); color: var(--accent2); background: rgba(124,92,252,0.08); }
+
+  .btn-add-nft {
+    padding: 10px 20px;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 0 20px rgba(124,92,252,0.35);
+    white-space: nowrap;
+  }
+
+  .btn-add-nft:hover { background: var(--accent2); box-shadow: 0 0 30px rgba(124,92,252,0.55); }
+
+  .catalog-body {
+    display: flex;
+    gap: 0;
+  }
+
+  .nft-grid-wrap {
+    flex: 1;
+    padding: 32px 40px;
+  }
+
+  .nft-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+  }
+
+  /* =================== NFT CARD =================== */
+  .nft-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+
+  .nft-card:hover {
+    border-color: var(--border2);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(124,92,252,0.12);
+  }
+
+  .nft-card-img {
+    width: 100%;
+    aspect-ratio: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .nft-card-img svg { width: 100%; height: 100%; display: block; }
+
+  .nft-card-badge {
+    position: absolute;
+    top: 12px; right: 12px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .badge-rare { background: rgba(251,191,36,0.2); color: var(--gold); border: 1px solid rgba(251,191,36,0.3); }
+  .badge-epic { background: rgba(124,92,252,0.2); color: var(--accent3); border: 1px solid rgba(124,92,252,0.3); }
+  .badge-legendary { background: rgba(0,229,255,0.12); color: var(--neon); border: 1px solid rgba(0,229,255,0.25); }
+  .badge-common { background: rgba(100,100,120,0.2); color: var(--text3); border: 1px solid rgba(100,100,120,0.2); }
+
+  .nft-card-info { padding: 16px; }
+
+  .nft-card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nft-card-author { font-size: 13px; color: var(--text3); margin-bottom: 14px; }
+
+  .nft-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nft-price {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--accent2);
+  }
+
+  .nft-price span { font-size: 12px; color: var(--text3); font-weight: 400; font-family: 'DM Sans', sans-serif; display: block; }
+
+  .nft-votes {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .vote-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text2);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .vote-btn:hover, .vote-btn.voted { border-color: var(--accent); color: var(--accent2); background: rgba(124,92,252,0.1); }
+
+  /* =================== NFT DETAIL PANEL =================== */
+  .detail-panel {
+    width: 420px;
+    min-height: calc(100vh - 68px);
+    background: var(--bg2);
+    border-left: 1px solid var(--border);
+    display: none;
+    flex-direction: column;
+    position: sticky;
+    top: 68px;
+    max-height: calc(100vh - 68px);
+    overflow-y: auto;
+  }
+
+  .detail-panel.open { display: flex; }
+
+  .detail-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    font-size: 18px;
+  }
+
+  .detail-close:hover { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .detail-img {
+    width: 100%;
+    aspect-ratio: 1;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .detail-img svg { width: 100%; height: 100%; display: block; }
+
+  .detail-content { padding: 24px; flex: 1; }
+
+  .detail-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 26px;
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+
+  .detail-author { color: var(--text3); font-size: 14px; margin-bottom: 16px; }
+
+  .detail-meta {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .meta-pill {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+  }
+
+  .detail-desc {
+    color: var(--text2);
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-price-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .detail-price-label { font-size: 13px; color: var(--text3); }
+
+  .detail-price-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    background: linear-gradient(135deg, var(--accent2), var(--neon));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .btn-buy {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #5b21b6);
+    border: none;
+    border-radius: 14px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 40px rgba(124,92,252,0.4);
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-buy::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    pointer-events: none;
+  }
+
+  .btn-buy:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(124,92,252,0.6); }
+  .btn-buy:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-buy.bought {
+    background: linear-gradient(135deg, #065f46, #064e3b);
+    box-shadow: 0 0 40px rgba(34,211,238,0.2);
+  }
+
+  .vote-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .vote-row .vote-btn { flex: 1; justify-content: center; padding: 10px; }
+
+  /* COMMENTS */
+  .comments-section { border-top: 1px solid var(--border); padding-top: 24px; }
+
+  .comments-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .comments-count {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+  }
+
+  .comment-item {
+    padding: 14px;
+    background: var(--bg3);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+  }
+
+  .comment-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .comment-author { font-weight: 500; font-size: 13px; }
+  .comment-time { font-size: 12px; color: var(--text3); }
+  .comment-text { font-size: 14px; color: var(--text2); line-height: 1.5; }
+
+  .comment-form {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .comment-form textarea {
+    flex: 1;
+    padding: 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    transition: all 0.2s;
+    min-height: 80px;
+  }
+
+  .comment-form textarea:focus { border-color: var(--accent); }
+  .comment-form textarea::placeholder { color: var(--text3); }
+
+  .comment-submit {
+    padding: 12px 18px;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-self: flex-end;
+    white-space: nowrap;
+  }
+
+  .comment-submit:hover { background: var(--accent2); }
+
+  .comment-login-note {
+    text-align: center;
+    padding: 16px;
+    background: var(--bg3);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    color: var(--text3);
+    font-size: 14px;
+    margin-top: 16px;
+  }
+
+  .comment-login-note a { color: var(--accent3); cursor: pointer; text-decoration: none; }
+
+  /* =================== MODAL =================== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius2);
+    padding: 32px;
+    width: 100%;
+    max-width: 520px;
+    margin: 20px;
+    position: relative;
+    box-shadow: 0 0 80px rgba(124,92,252,0.2);
+    animation: modalIn 0.25s ease;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 24px;
+    margin-bottom: 24px;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text2);
+    font-size: 18px;
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover { background: var(--accent); color: white; }
+
+  /* =================== PROFILE MODAL =================== */
+  .profile-avatar {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    margin: 0 auto 24px;
+    border: 3px solid var(--accent);
+    box-shadow: 0 0 30px rgba(124,92,252,0.4);
+  }
+
+  .profile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 24px 0;
+  }
+
+  .profile-stat {
+    text-align: center;
+    padding: 14px;
+    background: var(--bg3);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .profile-stat-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    background: linear-gradient(135deg, var(--accent2), var(--neon));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .profile-stat-label { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  /* COLLECTION LIST */
+  .collection-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .collection-thumb {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .collection-thumb svg { width: 100%; height: 100%; display: block; }
+
+  /* =================== TOAST =================== */
+  #toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 999;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+    display: flex; align-items: center; gap: 10px;
+    white-space: nowrap;
+  }
+
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast .toast-icon { font-size: 18px; }
+
+  /* =================== EMPTY STATE =================== */
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text3);
+  }
+
+  .empty-state svg { margin-bottom: 20px; opacity: 0.3; }
+  .empty-state h3 { font-size: 20px; color: var(--text2); margin-bottom: 8px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* COLLECTION COLOR INPUT */
+  .color-picker-row {
+    display: grid;
+    grid-template-columns: repeat(6,1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .color-swatch {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .color-swatch.selected { border-color: white; transform: scale(1.1); }
+
+  .guest-banner {
+    background: linear-gradient(135deg, rgba(124,92,252,0.08), rgba(0,229,255,0.05));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin: 0 40px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .guest-banner p { color: var(--text2); font-size: 14px; }
+  .guest-banner strong { color: var(--text); }
+
+  @media (max-width: 900px) {
+    .auth-right { width: 100%; }
+    .auth-left { display: none; }
+    nav { padding: 0 20px; }
+    .catalog-header { padding: 32px 20px 24px; }
+    .nft-grid-wrap { padding: 20px; }
+    .detail-panel { width: 100%; position: fixed; top: 68px; bottom: 0; z-index: 50; }
+    .guest-banner { margin: 0 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- NAV -->
+  <nav id="main-nav">
+    <div class="nav-logo">NEXUS</div>
+    <div class="nav-links" id="nav-links"></div>
+  </nav>
+
+  <!-- AUTH SCREEN -->
+  <div class="screen active" id="screen-auth">
+    <div class="auth-screen">
+      <div class="auth-left">
+        <div class="auth-art">
+          <div class="auth-art-grid" id="auth-grid"></div>
+          <h1>The Future of Digital Ownership</h1>
+          <p>Discover, collect, and trade unique NFTs from the world's most creative artists. Join the decentralised art revolution.</p>
+        </div>
+      </div>
+      <div class="auth-right">
+        <div class="auth-form" id="auth-form-wrap">
+          <div style="margin-bottom:32px;">
+            <div class="nav-logo" style="font-size:28px;margin-bottom:8px;">NEXUS</div>
+            <div style="color:var(--text3);font-size:14px;">NFT Marketplace</div>
+          </div>
+          <div class="auth-tabs">
+            <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+            <button class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
+          </div>
+          <div id="auth-error" class="error-msg"></div>
+
+          <!-- LOGIN -->
+          <div id="tab-login">
+            <div class="form-group">
+              <label>Email</label>
+              <input class="form-control" id="login-email" type="email" placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input class="form-control" id="login-pass" type="password" placeholder="••••••••">
+            </div>
+            <button class="btn-full" onclick="doLogin()">Sign In</button>
+          </div>
+
+          <!-- REGISTER -->
+          <div id="tab-register" style="display:none;">
+            <div class="form-group">
+              <label>Display Name</label>
+              <input class="form-control" id="reg-name" type="text" placeholder="CryptoArtist">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input class="form-control" id="reg-email" type="email" placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input class="form-control" id="reg-pass" type="password" placeholder="Min. 6 characters">
+            </div>
+            <button class="btn-full" onclick="doRegister()">Create Account</button>
+          </div>
+
+          <div class="auth-guest">
+            <a onclick="guestBrowse()">Browse as guest (view only) →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CATALOG SCREEN -->
+  <div class="screen" id="screen-catalog">
+    <div id="guest-banner-wrap"></div>
+    <div class="catalog-header">
+      <h2 id="catalog-title">Explore NFTs</h2>
+      <p id="catalog-subtitle">Curated digital art from the blockchain</p>
+      <div class="catalog-controls">
+        <div class="search-box">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" placeholder="Search NFTs..." id="search-input" oninput="filterNFTs()">
+        </div>
+        <button class="filter-btn active" onclick="setFilter(this,'all')">All</button>
+        <button class="filter-btn" onclick="setFilter(this,'legendary')">Legendary</button>
+        <button class="filter-btn" onclick="setFilter(this,'epic')">Epic</button>
+        <button class="filter-btn" onclick="setFilter(this,'rare')">Rare</button>
+        <div id="add-nft-btn-wrap"></div>
+      </div>
+    </div>
+    <div class="catalog-body">
+      <div class="nft-grid-wrap">
+        <div class="nft-grid" id="nft-grid"></div>
+      </div>
+      <div class="detail-panel" id="detail-panel">
+        <button class="detail-close" onclick="closeDetail()">✕</button>
+        <div class="detail-img" id="detail-img"></div>
+        <div class="detail-content" id="detail-content"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ADD NFT MODAL -->
+<div class="modal-overlay" id="modal-add-nft">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-add-nft')">✕</button>
+    <div class="modal-title">Create NFT</div>
+    <div class="form-group">
+      <label>Title</label>
+      <input class="form-control" id="nft-title" type="text" placeholder="My Masterpiece #1">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea class="form-control" id="nft-desc" rows="3" placeholder="Describe your NFT..." style="resize:none;min-height:80px;"></textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label>Price (ETH)</label>
+        <input class="form-control" id="nft-price" type="number" step="0.01" min="0.01" placeholder="0.5">
+      </div>
+      <div class="form-group">
+        <label>Rarity</label>
+        <select class="form-control" id="nft-rarity">
+          <option value="common">Common</option>
+          <option value="rare">Rare</option>
+          <option value="epic">Epic</option>
+          <option value="legendary">Legendary</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Art Color Theme</label>
+      <div class="color-picker-row" id="color-picker"></div>
+    </div>
+    <button class="btn-full" onclick="submitNFT()" style="margin-top:8px;">Mint NFT →</button>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="modal-overlay" id="modal-profile">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-profile')">✕</button>
+    <div class="modal-title">My Profile</div>
+    <div id="profile-content"></div>
+  </div>
+</div>
+
+<!-- BUY SUCCESS MODAL -->
+<div class="modal-overlay" id="modal-buy">
+  <div class="modal" style="text-align:center;">
+    <button class="modal-close" onclick="closeModal('modal-buy')">✕</button>
+    <div style="font-size:60px;margin-bottom:16px;">🎉</div>
+    <div class="modal-title">NFT Acquired!</div>
+    <p style="color:var(--text2);margin-bottom:8px;" id="buy-msg"></p>
+    <p style="color:var(--text3);font-size:13px;margin-bottom:24px;">Added to your collection</p>
+    <button class="btn-full" onclick="closeModal('modal-buy')">View Collection</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"><span class="toast-icon">✓</span><span id="toast-msg"></span></div>
+
+<script>
+// =================== DATA ===================
+const COLORS = ['#7c5cfc','#00e5ff','#fbbf24','#f472b6','#34d399','#fb923c','#a78bfa','#60a5fa','#f87171','#4ade80','#e879f9','#facc15'];
+
+let state = {
+  users: [
+    { id:'u1', name:'CryptoVault', email:'demo@demo.com', password:'demo123', color:'#7c5cfc', joined:'2024-01-15', collection:['n1','n3'], votes:{n2:'up',n4:'up'} }
+  ],
+  currentUser: null,
+  isGuest: false,
+  filter: 'all',
+  selectedNFT: null,
+  nfts: [
+    {
+      id:'n1', title:'Quantum Bloom', author:'PixelSage', rarity:'legendary',
+      price:2.8, votes:{up:142,down:8}, comments:[
+        {uid:'u1',name:'CryptoVault',text:'This is absolutely stunning. The geometry is mesmerizing!',time:'2h ago'},
+        {uid:'u2',name:'ArtWhale',text:'Picked this up for my collection. No regrets.',time:'5h ago'},
+      ],
+      desc:'A generative masterpiece born at the intersection of quantum physics and digital art. Each bloom is unique — an unrepeatable moment frozen in the blockchain forever.',
+      color1:'#7c5cfc', color2:'#00e5ff', color3:'#a78bfa', shape:'circles', created:'2024-03-01'
+    },
+    {
+      id:'n2', title:'Void Walkers #7', author:'NullSpace', rarity:'epic',
+      price:1.2, votes:{up:87,down:12}, comments:[
+        {uid:'u3',name:'DeFiDreamer',text:'The composition here is unlike anything I\'ve seen.',time:'1d ago'},
+      ],
+      desc:'From the shadows of the digital cosmos emerge the Void Walkers — entities existing between the layers of reality. One of 12 in this limited series.',
+      color1:'#1a1a3e', color2:'#6d28d9', color3:'#c4b5fd', shape:'lines', created:'2024-03-05'
+    },
+    {
+      id:'n3', title:'Solar Drift', author:'AetherArt', rarity:'rare',
+      price:0.55, votes:{up:234,down:19}, comments:[
+        {uid:'u1',name:'CryptoVault',text:'Love the warm palette. Perfect.',time:'3d ago'},
+        {uid:'u4',name:'WaveRunner',text:'Bought it. Gorgeous piece.',time:'4d ago'},
+        {uid:'u5',name:'ChainLink99',text:'Is this still available? Missed my chance!',time:'5d ago'},
+      ],
+      desc:'An abstract journey through solar winds and cosmic radiation. The warm gradients represent energy in its purest, most primal form, captured in 4K resolution.',
+      color1:'#fbbf24', color2:'#fb923c','color3':'#f472b6', shape:'waves', created:'2024-02-20'
+    },
+    {
+      id:'n4', title:'Neuro Grid', author:'SynthMind', rarity:'epic',
+      price:1.75, votes:{up:98,down:4}, comments:[],
+      desc:'A neural network visualization turned into art. Every node, every connection — a brain that never sleeps. Procedurally generated, one-of-a-kind.',
+      color1:'#00e5ff', color2:'#0891b2', color3:'#164e63', shape:'grid', created:'2024-03-10'
+    },
+    {
+      id:'n5', title:'Crimson Protocol', author:'RedChain', rarity:'legendary',
+      price:4.2, votes:{up:311,down:21}, comments:[
+        {uid:'u4',name:'WaveRunner',text:'One of the best pieces I\'ve seen all year.',time:'6h ago'},
+      ],
+      desc:'Protocol Crimson was designed as a tribute to the early days of cryptography. Sharp lines, bold geometry, and a palette that commands attention.',
+      color1:'#dc2626', color2:'#f87171', color3:'#fca5a5', shape:'triangles', created:'2024-01-30'
+    },
+    {
+      id:'n6', title:'Pearl Sequence', author:'DropArtist', rarity:'common',
+      price:0.18, votes:{up:45,down:3}, comments:[],
+      desc:'A minimal and elegant sequence of pearl-toned shapes. Sometimes beauty needs no complexity — just the right moment, perfectly composed.',
+      color1:'#e2e8f0', color2:'#94a3b8', color3:'#475569', shape:'dots', created:'2024-03-15'
+    }
+  ]
+};
+
+// =================== SVG ART GENERATOR ===================
+function generateArtSVG(nft, size=400) {
+  const c1 = nft.color1 || '#7c5cfc';
+  const c2 = nft.color2 || '#00e5ff';
+  const c3 = nft.color3 || '#a78bfa';
+  const seed = nft.id.charCodeAt(nft.id.length-1);
+
+  let inner = '';
+  const s = nft.shape || 'circles';
+
+  if (s === 'circles') {
+    for (let i=0;i<12;i++) {
+      const x = 60 + (i%4)*80 + (i%3)*15;
+      const y = 60 + Math.floor(i/4)*80 + (i%2)*20;
+      const r = 20 + (i*7)%40;
+      const c = [c1,c2,c3][i%3];
+      const op = 0.3 + (i*0.05)%0.6;
+      inner += `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" opacity="${op.toFixed(2)}"/>`;
+    }
+    inner += `<circle cx="${size/2}" cy="${size/2}" r="80" fill="${c1}" opacity="0.15"/>`;
+    inner += `<circle cx="${size*0.6}" cy="${size*0.4}" r="50" fill="${c2}" opacity="0.25"/>`;
+  } else if (s === 'lines') {
+    for (let i=0;i<20;i++) {
+      const x1 = (i*37)%size;
+      const y1 = i*25;
+      const x2 = size - (i*29)%size;
+      const y2 = size - i*25;
+      const c = [c1,c2,c3][i%3];
+      inner += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${1+i%3}" opacity="0.6"/>`;
+    }
+    inner += `<rect x="${size*0.2}" y="${size*0.2}" width="${size*0.6}" height="${size*0.6}" fill="none" stroke="${c2}" stroke-width="2" opacity="0.4" rx="4"/>`;
+  } else if (s === 'waves') {
+    for (let i=0;i<8;i++) {
+      const y = i*(size/8);
+      const amplitude = 20 + i*5;
+      let d = `M 0 ${y}`;
+      for (let x=0; x<=size; x+=20) {
+        const yp = y + Math.sin(x*0.05 + i)*amplitude;
+        d += ` L ${x} ${yp}`;
+      }
+      const c = [c1,c2,c3][i%3];
+      inner += `<path d="${d}" stroke="${c}" stroke-width="${2+i%3}" fill="none" opacity="0.7"/>`;
+    }
+  } else if (s === 'grid') {
+    const gridSize = 8;
+    for (let r=0;r<gridSize;r++) {
+      for (let col=0;col<gridSize;col++) {
+        const x = col*(size/gridSize);
+        const y = r*(size/gridSize);
+        const w = size/gridSize - 2;
+        const op = 0.1 + ((r*col)%7)*0.1;
+        const c = [c1,c2,c3][(r+col)%3];
+        if ((r+col)%2===0) inner += `<rect x="${x+1}" y="${y+1}" width="${w}" height="${w}" fill="${c}" opacity="${op.toFixed(2)}" rx="2"/>`;
+      }
+    }
+    const n = 12;
+    for (let i=0;i<n;i++) {
+      const angle = (i/n)*Math.PI*2;
+      const x = size/2 + Math.cos(angle)*size*0.3;
+      const y = size/2 + Math.sin(angle)*size*0.3;
+      inner += `<circle cx="${x}" cy="${y}" r="4" fill="${c2}" opacity="0.8"/>`;
+      inner += `<line x1="${size/2}" y1="${size/2}" x2="${x}" y2="${y}" stroke="${c2}" stroke-width="0.5" opacity="0.3"/>`;
+    }
+  } else if (s === 'triangles') {
+    for (let i=0;i<10;i++) {
+      const cx = (i*87)%size;
+      const cy = (i*63+30)%size;
+      const sz2 = 30 + (i*17)%60;
+      const pts = `${cx},${cy-sz2} ${cx-sz2*0.866},${cy+sz2*0.5} ${cx+sz2*0.866},${cy+sz2*0.5}`;
+      const c = [c1,c2,c3][i%3];
+      const op = 0.2 + (i*0.06)%0.5;
+      inner += `<polygon points="${pts}" fill="${c}" opacity="${op.toFixed(2)}"/>`;
+    }
+  } else { // dots
+    for (let r=0;r<10;r++) {
+      for (let col=0;col<10;col++) {
+        const x = col*(size/10)+size/20;
+        const y = r*(size/10)+size/20;
+        const c = [c1,c2,c3][(r*col)%3];
+        const op = 0.2 + ((r+col)%5)*0.12;
+        const radius = 2 + (r*col)%8;
+        inner += `<circle cx="${x}" cy="${y}" r="${radius}" fill="${c}" opacity="${op.toFixed(2)}"/>`;
+      }
+    }
+  }
+
+  return `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="bg_${nft.id}" cx="50%" cy="50%" r="70%">
+        <stop offset="0%" stop-color="${c1}" stop-opacity="0.12"/>
+        <stop offset="100%" stop-color="#080810"/>
+      </radialGradient>
+    </defs>
+    <rect width="${size}" height="${size}" fill="#0e0e1a"/>
+    <rect width="${size}" height="${size}" fill="url(#bg_${nft.id})"/>
+    ${inner}
+  </svg>`;
+}
+
+// =================== AUTH GRID ===================
+function buildAuthGrid() {
+  const grid = document.getElementById('auth-grid');
+  const previews = [
+    {id:'p1',color1:'#7c5cfc',color2:'#00e5ff',color3:'#a78bfa',shape:'circles'},
+    {id:'p2',color1:'#fbbf24',color2:'#fb923c',color3:'#f472b6',shape:'waves'},
+    {id:'p3',color1:'#dc2626',color2:'#f87171',color3:'#fca5a5',shape:'triangles'},
+    {id:'p4',color1:'#00e5ff',color2:'#0891b2',color3:'#164e63',shape:'grid'},
+    {id:'p5',color1:'#1a1a3e',color2:'#6d28d9',color3:'#c4b5fd',shape:'lines'},
+    {id:'p6',color1:'#e2e8f0',color2:'#94a3b8',color3:'#475569',shape:'dots'},
+  ];
+  grid.innerHTML = previews.map(p => `<div class="auth-art-card">${generateArtSVG(p,180)}</div>`).join('');
+}
+
+// =================== NAV ===================
+function renderNav() {
+  const nav = document.getElementById('nav-links');
+  if (!state.currentUser && !state.isGuest) { nav.innerHTML=''; return; }
+  if (state.isGuest) {
+    nav.innerHTML = `
+      <button class="nav-btn nav-btn-ghost" onclick="showScreen('auth')">Sign In</button>
+      <button class="nav-btn nav-btn-primary" onclick="switchAuthTab('register');showScreen('auth')">Create Account</button>`;
+  } else {
+    const u = state.currentUser;
+    const initials = u.name.slice(0,2).toUpperCase();
+    nav.innerHTML = `
+      <button class="nav-btn nav-btn-ghost" onclick="openProfile()">
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="avatar-sm" style="background:${u.color}22;color:${u.color};border:1px solid ${u.color}44;">${initials}</span>
+          ${u.name}
+        </span>
+      </button>
+      <button class="nav-btn nav-btn-ghost" onclick="logout()">Sign Out</button>`;
+  }
+}
+
+// =================== SCREENS ===================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  if (id==='catalog') renderCatalog();
+  renderNav();
+}
+
+// =================== AUTH ===================
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active', (tab==='login'&&i===0)||(tab==='register'&&i===1)));
+  document.getElementById('tab-login').style.display = tab==='login'?'block':'none';
+  document.getElementById('tab-register').style.display = tab==='register'?'block':'none';
+  document.getElementById('auth-error').style.display='none';
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const user = state.users.find(u=>u.email===email && u.password===pass);
+  if (!user) { showAuthError('Invalid email or password.'); return; }
+  state.currentUser = user;
+  state.isGuest = false;
+  showScreen('catalog');
+}
+
+function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  if (!name || !email || !pass) { showAuthError('Please fill all fields.'); return; }
+  if (pass.length < 6) { showAuthError('Password must be at least 6 characters.'); return; }
+  if (state.users.find(u=>u.email===email)) { showAuthError('Email already registered.'); return; }
+  const newUser = {
+    id: 'u'+Date.now(), name, email, password: pass,
+    color: COLORS[Math.floor(Math.random()*COLORS.length)],
+    joined: new Date().toISOString().slice(0,10),
+    collection: [], votes: {}
+  };
+  state.users.push(newUser);
+  state.currentUser = newUser;
+  state.isGuest = false;
+  showScreen('catalog');
+}
+
+function guestBrowse() {
+  state.isGuest = true;
+  state.currentUser = null;
+  showScreen('catalog');
+}
+
+function logout() {
+  state.currentUser = null;
+  state.isGuest = false;
+  state.selectedNFT = null;
+  showScreen('auth');
+}
+
+// =================== CATALOG ===================
+let currentFilter = 'all';
+let currentSearch = '';
+
+function setFilter(btn, filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  filterNFTs();
+}
+
+function filterNFTs() {
+  currentSearch = document.getElementById('search-input').value.toLowerCase();
+  renderGrid();
+}
+
+function renderCatalog() {
+  // Guest banner
+  const wrap = document.getElementById('guest-banner-wrap');
+  if (state.isGuest) {
+    wrap.innerHTML = `<div class="guest-banner" style="margin:20px 40px;">
+      <p><strong>Browsing as guest.</strong> Sign in to vote, comment, buy, and create NFTs.</p>
+      <button class="nav-btn nav-btn-primary" onclick="showScreen('auth')">Sign In</button>
+    </div>`;
+  } else { wrap.innerHTML = ''; }
+
+  // Add NFT button
+  const wrap2 = document.getElementById('add-nft-btn-wrap');
+  if (!state.isGuest) {
+    wrap2.innerHTML = `<button class="btn-add-nft" onclick="openAddNFT()">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      Mint NFT
+    </button>`;
+  } else { wrap2.innerHTML = ''; }
+
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('nft-grid');
+  let nfts = state.nfts;
+  if (currentFilter !== 'all') nfts = nfts.filter(n=>n.rarity===currentFilter);
+  if (currentSearch) nfts = nfts.filter(n=>n.title.toLowerCase().includes(currentSearch)||n.author.toLowerCase().includes(currentSearch));
+
+  if (!nfts.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <svg width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <h3>No NFTs found</h3>
+      <p>Try adjusting your search or filters</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = nfts.map(nft => {
+    const u = state.currentUser;
+    const voted = u && u.votes[nft.id];
+    const inCollection = u && u.collection.includes(nft.id);
+    const badgeClass = {'legendary':'badge-legendary','epic':'badge-epic','rare':'badge-rare','common':'badge-common'}[nft.rarity];
+    const isSelected = state.selectedNFT === nft.id;
+
+    return `<div class="nft-card${isSelected?' selected':''}" onclick="selectNFT('${nft.id}')" style="${isSelected?'border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,92,252,0.2);':''}">
+      <div class="nft-card-img">
+        ${generateArtSVG(nft,300)}
+        <div class="nft-card-badge ${badgeClass}">${nft.rarity}</div>
+        ${inCollection ? '<div style="position:absolute;top:12px;left:12px;background:rgba(34,197,94,0.2);border:1px solid rgba(34,197,94,0.4);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:#4ade80;font-family:Syne,sans-serif;">OWNED</div>' : ''}
+      </div>
+      <div class="nft-card-info">
+        <div class="nft-card-title">${nft.title}</div>
+        <div class="nft-card-author">by ${nft.author}</div>
+        <div class="nft-card-footer">
+          <div class="nft-price">${nft.price} ETH<span>≈ $${(nft.price*3240).toFixed(0)}</span></div>
+          <div class="nft-votes">
+            <button class="vote-btn${voted==='up'?' voted':''}" onclick="vote(event,'${nft.id}','up')">
+              ▲ ${nft.votes.up}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// =================== NFT DETAIL ===================
+function selectNFT(id) {
+  state.selectedNFT = id;
+  const nft = state.nfts.find(n=>n.id===id);
+  const panel = document.getElementById('detail-panel');
+  panel.classList.add('open');
+  renderDetail(nft);
+  renderGrid();
+}
+
+function closeDetail() {
+  state.selectedNFT = null;
+  document.getElementById('detail-panel').classList.remove('open');
+  renderGrid();
+}
+
+function renderDetail(nft) {
+  const u = state.currentUser;
+  const inCollection = u && u.collection.includes(nft.id);
+  const voted = u && u.votes[nft.id];
+  const badgeClass = {'legendary':'badge-legendary','epic':'badge-epic','rare':'badge-rare','common':'badge-common'}[nft.rarity];
+
+  document.getElementById('detail-img').innerHTML = generateArtSVG(nft,420);
+
+  const commentsHTML = nft.comments.map(c => {
+    const initials = c.name.slice(0,2).toUpperCase();
+    const userColor = (state.users.find(u=>u.id===c.uid)||{color:'#7c5cfc'}).color;
+    return `<div class="comment-item">
+      <div class="comment-header">
+        <div class="avatar-sm" style="background:${userColor}22;color:${userColor};border:1px solid ${userColor}44;width:30px;height:30px;font-size:11px;flex-shrink:0;">${initials}</div>
+        <span class="comment-author">${c.name}</span>
+        <span class="comment-time">${c.time}</span>
+      </div>
+      <div class="comment-text">${c.text}</div>
+    </div>`;
+  }).join('');
+
+  const commentFormHTML = state.currentUser
+    ? `<div class="comment-form">
+        <textarea id="comment-input" placeholder="Share your thoughts..."></textarea>
+        <button class="comment-submit" onclick="submitComment('${nft.id}')">Post</button>
+      </div>`
+    : `<div class="comment-login-note">
+        <a onclick="showScreen('auth')">Sign in</a> to leave a comment
+      </div>`;
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="nft-card-badge ${badgeClass}" style="position:relative;display:inline-block;margin-bottom:12px;">${nft.rarity}</div>
+    <div class="detail-title">${nft.title}</div>
+    <div class="detail-author">by <span style="color:var(--accent3);">${nft.author}</span></div>
+    <div class="detail-meta">
+      <span class="meta-pill">⬥ ${nft.votes.up + nft.votes.down} total votes</span>
+      <span class="meta-pill">💬 ${nft.comments.length} comments</span>
+      <span class="meta-pill">📅 ${nft.created}</span>
+    </div>
+    <div class="detail-desc">${nft.desc}</div>
+    <div class="detail-price-row">
+      <div><div class="detail-price-label">Current Price</div><div class="detail-price-value">${nft.price} ETH</div></div>
+      <div style="text-align:right;color:var(--text3);font-size:13px;">≈ $${(nft.price*3240).toFixed(0)} USD</div>
+    </div>
+    <div class="vote-row">
+      <button class="vote-btn${voted==='up'?' voted':''}" onclick="vote(event,'${nft.id}','up')">▲ ${nft.votes.up} Upvote</button>
+      <button class="vote-btn${voted==='down'?' voted':''}" onclick="vote(event,'${nft.id}','down')">▼ ${nft.votes.down} Downvote</button>
+    </div>
+    <button class="btn-buy${inCollection?' bought':''}" onclick="buyNFT('${nft.id}')" ${inCollection?'disabled':''}>
+      ${inCollection ? '✓ In Your Collection' : '⚡ Buy Now — '+nft.price+' ETH'}
+    </button>
+    <div class="comments-section">
+      <div class="comments-title">
+        Comments <span class="comments-count">${nft.comments.length}</span>
+      </div>
+      ${commentsHTML || `<div style="text-align:center;padding:20px;color:var(--text3);font-size:14px;">No comments yet. Be the first!</div>`}
+      ${commentFormHTML}
+    </div>
+  `;
+}
+
+// =================== VOTE ===================
+function vote(e, nftId, dir) {
+  e.stopPropagation();
+  if (!state.currentUser) { showToast('Sign in to vote!', '🔒'); return; }
+  const u = state.currentUser;
+  const nft = state.nfts.find(n=>n.id===nftId);
+  const prev = u.votes[nftId];
+  if (prev === dir) {
+    nft.votes[dir]--;
+    delete u.votes[nftId];
+  } else {
+    if (prev) nft.votes[prev]--;
+    nft.votes[dir]++;
+    u.votes[nftId] = dir;
+  }
+  renderGrid();
+  if (state.selectedNFT === nftId) renderDetail(nft);
+}
+
+// =================== BUY ===================
+function buyNFT(nftId) {
+  if (!state.currentUser) { showToast('Sign in to buy!', '🔒'); return; }
+  const u = state.currentUser;
+  const nft = state.nfts.find(n=>n.id===nftId);
+  if (u.collection.includes(nftId)) return;
+  u.collection.push(nftId);
+  document.getElementById('buy-msg').textContent = `"${nft.title}" is now yours!`;
+  openModal('modal-buy');
+  renderGrid();
+  renderDetail(nft);
+}
+
+// =================== COMMENT ===================
+function submitComment(nftId) {
+  if (!state.currentUser) return;
+  const input = document.getElementById('comment-input');
+  const text = input.value.trim();
+  if (!text) { showToast('Comment cannot be empty', '⚠️'); return; }
+  const nft = state.nfts.find(n=>n.id===nftId);
+  nft.comments.unshift({
+    uid: state.currentUser.id,
+    name: state.currentUser.name,
+    text, time: 'just now'
+  });
+  input.value = '';
+  renderDetail(nft);
+  renderGrid();
+  showToast('Comment posted!', '💬');
+}
+
+// =================== ADD NFT ===================
+let selectedColor = 0;
+
+function openAddNFT() {
+  if (!state.currentUser) return;
+  const picker = document.getElementById('color-picker');
+  picker.innerHTML = COLORS.map((c,i) =>
+    `<div class="color-swatch${i===0?' selected':''}" style="background:${c};" onclick="selectColor(this,${i})"></div>`
+  ).join('');
+  selectedColor = 0;
+  document.getElementById('nft-title').value='';
+  document.getElementById('nft-desc').value='';
+  document.getElementById('nft-price').value='';
+  document.getElementById('nft-rarity').value='common';
+  openModal('modal-add-nft');
+}
+
+function selectColor(el, idx) {
+  document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedColor = idx;
+}
+
+function submitNFT() {
+  const title = document.getElementById('nft-title').value.trim();
+  const desc = document.getElementById('nft-desc').value.trim();
+  const price = parseFloat(document.getElementById('nft-price').value);
+  const rarity = document.getElementById('nft-rarity').value;
+  if (!title || !desc || !price || price<=0) { showToast('Please fill all fields', '⚠️'); return; }
+  const shapes = ['circles','lines','waves','grid','triangles','dots'];
+  const baseColor = COLORS[selectedColor];
+  const nft = {
+    id: 'n'+Date.now(),
+    title, author: state.currentUser.name,
+    rarity, price,
+    votes:{up:0,down:0},
+    comments:[],
+    desc,
+    color1: baseColor,
+    color2: COLORS[(selectedColor+4)%COLORS.length],
+    color3: COLORS[(selectedColor+8)%COLORS.length],
+    shape: shapes[Math.floor(Math.random()*shapes.length)],
+    created: new Date().toISOString().slice(0,10)
+  };
+  state.nfts.unshift(nft);
+  closeModal('modal-add-nft');
+  renderGrid();
+  showToast('NFT minted successfully!', '🎨');
+}
+
+// =================== PROFILE ===================
+function openProfile() {
+  if (!state.currentUser) return;
+  const u = state.currentUser;
+  const initials = u.name.slice(0,2).toUpperCase();
+  const collectionNFTs = state.nfts.filter(n=>u.collection.includes(n.id));
+  const votesCount = Object.keys(u.votes).length;
+
+  document.getElementById('profile-content').innerHTML = `
+    <div style="text-align:center;margin-bottom:24px;">
+      <div class="profile-avatar" style="background:${u.color}22;color:${u.color};border-color:${u.color};">
+        ${initials}
+      </div>
+      <div style="font-family:Syne,sans-serif;font-weight:800;font-size:22px;margin-bottom:4px;">${u.name}</div>
+      <div style="color:var(--text3);font-size:13px;">${u.email}</div>
+      <div style="color:var(--text3);font-size:13px;margin-top:4px;">Member since ${u.joined}</div>
+    </div>
+    <div class="profile-stats">
+      <div class="profile-stat">
+        <div class="profile-stat-value">${u.collection.length}</div>
+        <div class="profile-stat-label">Collected</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-value">${votesCount}</div>
+        <div class="profile-stat-label">Votes cast</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-value">${state.nfts.filter(n=>n.author===u.name).length}</div>
+        <div class="profile-stat-label">Minted</div>
+      </div>
+    </div>
+    ${collectionNFTs.length ? `
+      <div style="font-family:Syne,sans-serif;font-weight:700;font-size:15px;margin-bottom:12px;">My Collection</div>
+      <div class="collection-grid">
+        ${collectionNFTs.map(n=>`<div class="collection-thumb" onclick="closeModal('modal-profile');selectNFT('${n.id}')">${generateArtSVG(n,120)}</div>`).join('')}
+      </div>
+    ` : '<div style="text-align:center;color:var(--text3);font-size:14px;padding:20px;">Your collection is empty.<br>Start buying NFTs!</div>'}
+  `;
+  openModal('modal-profile');
+}
+
+// =================== MODALS ===================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+// =================== TOAST ===================
+let toastTimer;
+function showToast(msg, icon='✓') {
+  const t = document.getElementById('toast');
+  t.querySelector('.toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// =================== INIT ===================
+buildAuthGrid();
+renderNav();
+</script>
+</body>
+</html>
